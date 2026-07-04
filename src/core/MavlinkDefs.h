@@ -9,7 +9,10 @@
 #pragma GCC diagnostic ignored "-Wpedantic"
 #endif
 
-#include <common/mavlink.h>
+// ardupilotmega extends common with ArduPilot-specific messages (AHRS,
+// SIMSTATE, MEMINFO, ...). Without them the parser would flag every unknown
+// message id as a CRC failure and the sequence-loss statistics would drift.
+#include <ardupilotmega/mavlink.h>
 
 #if defined(__GNUC__)
 #pragma GCC diagnostic pop

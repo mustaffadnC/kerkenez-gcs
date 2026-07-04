@@ -10,7 +10,7 @@ Portföy hikayesi: HavaKarakolu-Firmware (STM32 aviyonik) + roket-yer-istasyonu 
 - **Neden 6.12 değil:** aqtinstall 3.3.0 (en yeni) 6.11/6.12 depo düzenini çözemiyor; 6.10.x aqt'nin desteklediği en yeni seri. aqt güncellenince yükseltilebilir.
 - **SITL:** `tools/get_sitl.ps1` → Mission Planner'ın prebuilt Windows binary'leri. İki tuzak çözüldü: `.elf` uzantısı `.exe` olarak kaydediliyor (Windows .elf'i çalıştırmıyor) + `Unblock-File` (MOTW engeli). Çalıştırma: `.\ArduCopter.exe --model + --home 39.925533,32.866287,850,0 --defaults copter.parm -I0` → TCP 5760.
 - **Python:** her zaman `py` launcher (`python` Store stub'ı).
-- **MAVLink:** `third_party/mavlink` — c_library_v2 common dialect, commit VERSION.txt'de. Include her zaman `core/MavlinkDefs.h` üzerinden (pragma'lı sarmalayıcı).
+- **MAVLink:** `third_party/mavlink` — c_library_v2 **ardupilotmega** dialect'i (common yetmez: AP'nin kendi mesajları bilinmeyince BAD_CRC sayılıyor + seq istatistiği kayıyor). Include her zaman `core/MavlinkDefs.h` üzerinden (pragma'lı sarmalayıcı).
 
 ## Build
 
@@ -29,7 +29,7 @@ cmake --preset mingw-debug && cmake --build --preset mingw-debug && ctest --pres
 ## Fazlar
 
 - **Faz 0 ✅** — toolchain, SITL hattı, MavlinkCodec + 4 test, TcpLink, poc_telemetry, CI, dokümanlar
-- **Faz 1** — UdpLink/SerialLink + LinkManager (auto-reconnect), Vehicle modeli, ConnectDialog, kayıtlı akış fixture'ları (`tests/data/`)
+- **Faz 1 ✅** — UdpLink/SerialLink + LinkManager (3 sn auto-reconnect, SITL restart ile doğrulandı), Vehicle modeli (sysid kilidi, mod adları, heartbeat watchdog), ConnectDialog + TelemetryPanel + status bar istatistikleri, gerçek SITL kaydı fixture (`tests/data/sitl_stream.bin`, `tools/record_stream.py`), 4 test hedefi
 - **Faz 2** — PfdWidget (yapay ufuk + şeritler), CompassWidget, StatusPanel, AlertPanel; kabul: SITL'de 10 Hz akıcı, README'ye GIF
 - **Faz 3** — MapWidget + TileCache/TileFetcher (OSM, UA: `KerkenezGCS/1.0 (github.com/conny0506/kerkenez-gcs)`, ≤2 paralel, disk cache → offline); kabul: internet kesik cache'li bölgede çalışır
 - **Faz 4** — CommandController (ACK/timeout/retry), guided "buraya git", MissionEditor + MissionController, ParamTable; kabul: haritada çizilen 6+ WP görevi Copter+Plane SITL'de uçar, video

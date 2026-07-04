@@ -16,8 +16,9 @@
 └────────────────────────────────────────────────┘
 ```
 
-Dependency rule: `ui` and `comm` may depend on `core`; `core` depends only on
-QtCore + MAVLink headers. Nothing depends on `app`.
+Dependency rule: `comm` depends on `core`; `ui` depends on `core` and on
+`comm`'s link abstractions (`LinkConfig`, `ILink` state, `LinkManager`);
+`core` depends only on QtCore + MAVLink headers. Nothing depends on `app`.
 
 ## Data flow (telemetry, Phase 1 target)
 

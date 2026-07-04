@@ -1,7 +1,13 @@
 # MAVLink Usage Notes
 
-Dialect: `common` (vendored from [mavlink/c_library_v2](https://github.com/mavlink/c_library_v2),
+Dialect: `ardupilotmega` (vendored from [mavlink/c_library_v2](https://github.com/mavlink/c_library_v2),
 commit recorded in `third_party/mavlink/VERSION.txt`). MAVLink v2 framing.
+
+Why not plain `common`: ArduPilot also emits its own dialect messages (AHRS,
+SIMSTATE, MEMINFO, ...). A parser that only knows `common` cannot look up their
+`crc_extra` and misclassifies every one of them as a CRC failure — and the
+sequence-loss statistics drift because the "failed" frames still consume
+sequence numbers. Discovered via the recorded-stream fixture test.
 
 GCS identity: `sysid 255`, `compid MAV_COMP_ID_MISSIONPLANNER` (what ArduPilot
 expects from a ground station).

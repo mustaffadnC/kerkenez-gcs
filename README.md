@@ -15,19 +15,23 @@ Most hobby GCS projects wrap a web view around someone else's stack. Kerkenez is
 - **Offline-capable slippy map** — own tile engine with disk cache, built for environments where you cannot assume connectivity
 - **Simulation-first workflow** — every feature is validated against ArduPilot SITL (Copter + Plane)
 
-## Status — Phase 0 (skeleton) ✅
+## Status — Phase 1 (link layer) ✅
 
 | Phase | Scope | Status |
 |---|---|---|
 | 0 | Toolchain, SITL pipeline, MAVLink codec + tests, CI | ✅ done |
-| 1 | Link layer (TCP/UDP/serial), vehicle model, reconnect | ⬜ |
+| 1 | Link layer (TCP/UDP/serial), vehicle model, reconnect | ✅ done |
 | 2 | Telemetry panel / PFD (artificial horizon, tapes, alerts) | ⬜ |
 | 3 | Map with offline tile cache, live tracking | ⬜ |
 | 4 | Commands (ARM/Takeoff/RTL), waypoint mission editor, params | ⬜ |
 | 5 | tlog recording + replay, flight summary | ⬜ |
 | 6 | Release packaging, demo video | ⬜ |
 
-Working today: `poc_telemetry` connects to SITL on TCP 5760, requests streams and prints live HEARTBEAT / ATTITUDE / GLOBAL_POSITION_INT.
+Working today:
+- **GUI app** (`kerkenez.exe`): connect dialog (TCP/UDP/serial), live telemetry grid (mode, attitude, position, battery, GPS), autopilot message log, link statistics (packet loss %, CRC errors) in the status bar
+- **Auto-reconnect**: kill the link (or the vehicle) and the ground station reconnects on its own and re-requests telemetry streams — verified by restarting SITL mid-flight
+- **Vehicle model**: locks onto the first autopilot heartbeat, maps ArduPilot Copter/Plane flight modes, watchdogs the heartbeat (3 s → LOST)
+- Parser is validated against a **recorded real SITL byte stream** checked into `tests/data/` (zero CRC errors, chunked feed equals whole feed)
 
 ## Build
 
