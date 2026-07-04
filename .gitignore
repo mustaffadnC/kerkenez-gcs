@@ -1,0 +1,9 @@
+build/
+tools/sitl/
+*.tlog
+tile-cache/
+eeprom.bin
+logs/
+terrain/
+*.user
+CMakeUserPresets.json
