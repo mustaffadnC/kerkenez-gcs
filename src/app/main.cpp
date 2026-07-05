@@ -1,4 +1,6 @@
 #include <QApplication>
+#include <QCommandLineParser>
+#include <QDir>
 #include <QTimer>
 
 #include "comm/LinkManager.h"
@@ -40,6 +42,53 @@ int main(int argc, char *argv[])
 
     MainWindow window(&linkManager, &codec, &vehicle);
     window.show();
+
+    // e.g. --connect tcp:127.0.0.1:5760  or  --connect udp:14550
+    QCommandLineParser parser;
+    parser.addHelpOption();
+    const QCommandLineOption connectOption(
+        QStringLiteral("connect"), QStringLiteral("Auto-connect on startup."),
+        QStringLiteral("endpoint"));
+    parser.addOption(connectOption);
+    // Dev/demo helper: save window frames (works even when covered by other
+    // windows — QWidget::grab renders the widget tree, not the screen).
+    const QCommandLineOption grabOption(
+        QStringLiteral("grab"),
+        QStringLiteral("Record window frames: <dir>[,count[,intervalMs]]"),
+        QStringLiteral("spec"));
+    parser.addOption(grabOption);
+    parser.process(app);
+
+    QTimer grabTimer;
+    int grabIndex = 0;
+    if (parser.isSet(grabOption)) {
+        const QStringList spec = parser.value(grabOption).split(QLatin1Char(','));
+        const QString dir = spec.value(0);
+        const int count = spec.value(1, QStringLiteral("34")).toInt();
+        const int intervalMs = spec.value(2, QStringLiteral("600")).toInt();
+        QDir().mkpath(dir);
+        QObject::connect(&grabTimer, &QTimer::timeout, &window, [&, dir, count] {
+            window.grab().save(QStringLiteral("%1/frame%2.png")
+                                   .arg(dir)
+                                   .arg(grabIndex, 3, 10, QLatin1Char('0')));
+            if (++grabIndex >= count)
+                grabTimer.stop();
+        });
+        grabTimer.start(intervalMs);
+    }
+    if (parser.isSet(connectOption)) {
+        const QStringList parts = parser.value(connectOption).split(QLatin1Char(':'));
+        LinkConfig config;
+        if (parts.size() >= 2 && parts[0] == QLatin1String("udp")) {
+            config.type = LinkConfig::Type::Udp;
+            config.port = parts[1].toUShort();
+        } else if (parts.size() >= 3 && parts[0] == QLatin1String("tcp")) {
+            config.type = LinkConfig::Type::Tcp;
+            config.host = parts[1];
+            config.port = parts[2].toUShort();
+        }
+        linkManager.connectLink(config);
+    }
 
     return QApplication::exec();
 }

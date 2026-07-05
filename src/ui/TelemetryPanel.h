@@ -4,14 +4,13 @@
 
 class QGridLayout;
 class QLabel;
-class QListWidget;
 
 namespace kerkenez {
 
 class Vehicle;
 
-// Live raw-value grid + autopilot message log. The PFD replaces the grid as
-// the primary display in Phase 2; this panel stays as a diagnostics view.
+// Raw-value diagnostics grid; lives in a dock. The PFD is the primary display,
+// STATUSTEXT messages live in the AlertPanel.
 class TelemetryPanel : public QWidget
 {
     Q_OBJECT
@@ -33,7 +32,6 @@ private:
     QLabel *m_climb = nullptr;
     QLabel *m_battery = nullptr;
     QLabel *m_gps = nullptr;
-    QListWidget *m_messages = nullptr;
 };
 
 } // namespace kerkenez

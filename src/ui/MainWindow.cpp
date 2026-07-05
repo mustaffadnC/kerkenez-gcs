@@ -1,14 +1,23 @@
 #include "ui/MainWindow.h"
 
+#include <QDockWidget>
+#include <QHBoxLayout>
 #include <QLabel>
+#include <QMenuBar>
+#include <QSplitter>
 #include <QStatusBar>
 #include <QTimer>
 #include <QToolBar>
+#include <QVBoxLayout>
 
 #include "comm/LinkManager.h"
 #include "core/MavlinkCodec.h"
 #include "core/Vehicle.h"
+#include "ui/AlertPanel.h"
+#include "ui/CompassWidget.h"
 #include "ui/ConnectDialog.h"
+#include "ui/PfdWidget.h"
+#include "ui/StatusPanel.h"
 #include "ui/TelemetryPanel.h"
 
 namespace kerkenez {
@@ -20,9 +29,50 @@ MainWindow::MainWindow(LinkManager *linkManager, MavlinkCodec *codec, Vehicle *v
     , m_codec(codec)
 {
     setWindowTitle(QStringLiteral("Kerkenez GCS"));
-    resize(1024, 640);
+    resize(1180, 720);
 
-    setCentralWidget(new TelemetryPanel(vehicle, this));
+    // Left column: PFD with the compass tucked underneath.
+    auto *pfd = new PfdWidget(this);
+    auto *compass = new CompassWidget(this);
+    compass->setFixedSize(170, 170);
+    auto *leftWidget = new QWidget(this);
+    auto *leftLayout = new QVBoxLayout(leftWidget);
+    leftLayout->setContentsMargins(4, 4, 4, 4);
+    leftLayout->addWidget(pfd, 1);
+    auto *compassRow = new QHBoxLayout;
+    compassRow->addStretch(1);
+    compassRow->addWidget(compass);
+    compassRow->addStretch(1);
+    leftLayout->addLayout(compassRow);
+
+    // Right column: status on top, alerts + autopilot log below.
+    auto *rightWidget = new QWidget(this);
+    auto *rightLayout = new QVBoxLayout(rightWidget);
+    rightLayout->setContentsMargins(4, 4, 4, 4);
+    rightLayout->addWidget(new StatusPanel(vehicle, this));
+    rightLayout->addWidget(new AlertPanel(vehicle, this), 1);
+
+    auto *splitter = new QSplitter(this);
+    splitter->addWidget(leftWidget);
+    splitter->addWidget(rightWidget);
+    splitter->setStretchFactor(0, 3);
+    splitter->setStretchFactor(1, 2);
+    setCentralWidget(splitter);
+
+    // Raw values as an optional diagnostics dock.
+    auto *dock = new QDockWidget(tr("Raw telemetry"), this);
+    dock->setWidget(new TelemetryPanel(vehicle, dock));
+    addDockWidget(Qt::BottomDockWidgetArea, dock);
+    dock->hide();
+    menuBar()->addMenu(tr("&View"))->addAction(dock->toggleViewAction());
+
+    connect(vehicle, &Vehicle::attitudeChanged, pfd, &PfdWidget::setAttitude);
+    connect(vehicle, &Vehicle::vfrChanged, pfd, &PfdWidget::setSpeeds);
+    connect(vehicle, &Vehicle::positionChanged, this,
+            [pfd, compass](double, double, float msl, float rel, float heading) {
+                pfd->setAltitudes(msl, rel);
+                compass->setHeading(heading);
+            });
 
     auto *toolbar = addToolBar(tr("Connection"));
     toolbar->setMovable(false);

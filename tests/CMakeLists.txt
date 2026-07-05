@@ -14,3 +14,8 @@ add_test(NAME vehicle COMMAND tst_vehicle)
 add_executable(tst_linkmanager tst_linkmanager.cpp)
 target_link_libraries(tst_linkmanager PRIVATE kerkenez_comm Qt6::Test)
 add_test(NAME linkmanager COMMAND tst_linkmanager)
+
+add_executable(tst_widgets tst_widgets.cpp)
+target_link_libraries(tst_widgets PRIVATE kerkenez_ui Qt6::Test)
+add_test(NAME widgets COMMAND tst_widgets)
+set_tests_properties(widgets PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen")

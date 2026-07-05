@@ -4,6 +4,10 @@
 
 A UAV ground control station written in **C++20 / Qt 6**, speaking **MAVLink v2** and tested against **ArduPilot SITL** — no hardware required.
 
+![Kerkenez GCS during a scripted SITL flight](docs/img/pfd-flight.gif)
+
+*Live capture: scripted guided flight in ArduPilot SITL — takeoff, dash and a banking turn on the QPainter-drawn PFD.*
+
 > 🇹🇷 *Türkçe özet aşağıda.*
 
 ## Why
@@ -15,23 +19,25 @@ Most hobby GCS projects wrap a web view around someone else's stack. Kerkenez is
 - **Offline-capable slippy map** — own tile engine with disk cache, built for environments where you cannot assume connectivity
 - **Simulation-first workflow** — every feature is validated against ArduPilot SITL (Copter + Plane)
 
-## Status — Phase 1 (link layer) ✅
+## Status — Phase 2 (flight instruments) ✅
 
 | Phase | Scope | Status |
 |---|---|---|
 | 0 | Toolchain, SITL pipeline, MAVLink codec + tests, CI | ✅ done |
 | 1 | Link layer (TCP/UDP/serial), vehicle model, reconnect | ✅ done |
-| 2 | Telemetry panel / PFD (artificial horizon, tapes, alerts) | ⬜ |
+| 2 | Telemetry panel / PFD (artificial horizon, tapes, alerts) | ✅ done |
 | 3 | Map with offline tile cache, live tracking | ⬜ |
 | 4 | Commands (ARM/Takeoff/RTL), waypoint mission editor, params | ⬜ |
 | 5 | tlog recording + replay, flight summary | ⬜ |
 | 6 | Release packaging, demo video | ⬜ |
 
 Working today:
-- **GUI app** (`kerkenez.exe`): connect dialog (TCP/UDP/serial), live telemetry grid (mode, attitude, position, battery, GPS), autopilot message log, link statistics (packet loss %, CRC errors) in the status bar
+- **Primary flight display**: artificial horizon with pitch ladder and roll scale, speed/altitude tapes and climb readout — all drawn with QPainter, no assets, no web view
+- **Compass** with rotating rose and digital heading, **status panel** (mode, ARMED, battery, GPS) and an **alert panel** (TELEMETRY LOST / BATTERY LOW / NO GPS FIX banners + severity-colored autopilot log)
 - **Auto-reconnect**: kill the link (or the vehicle) and the ground station reconnects on its own and re-requests telemetry streams — verified by restarting SITL mid-flight
 - **Vehicle model**: locks onto the first autopilot heartbeat, maps ArduPilot Copter/Plane flight modes, watchdogs the heartbeat (3 s → LOST)
-- Parser is validated against a **recorded real SITL byte stream** checked into `tests/data/` (zero CRC errors, chunked feed equals whole feed)
+- Parser validated against a **recorded real SITL byte stream** checked into `tests/data/` (zero CRC errors, chunked feed equals whole feed); instruments have headless render tests
+- **Scripted demo flight**: `tools\run_demo.ps1` boots SITL, flies a guided mission via pymavlink and watches it from the GCS (the GIF above is its `-GrabDir` output)
 
 ## Build
 

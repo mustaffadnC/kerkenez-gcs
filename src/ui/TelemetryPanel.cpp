@@ -1,9 +1,7 @@
 #include "ui/TelemetryPanel.h"
 
 #include <QGridLayout>
-#include <QGroupBox>
 #include <QLabel>
-#include <QListWidget>
 #include <QVBoxLayout>
 
 #include "core/Vehicle.h"
@@ -12,7 +10,6 @@ namespace kerkenez {
 
 namespace {
 const auto kValueStyle = QStringLiteral("font-family: Consolas, monospace; font-size: 14px;");
-constexpr int kMaxMessages = 100;
 } // namespace
 
 TelemetryPanel::TelemetryPanel(Vehicle *vehicle, QWidget *parent)
@@ -33,27 +30,16 @@ TelemetryPanel::TelemetryPanel(Vehicle *vehicle, QWidget *parent)
     m_climb = addValue(grid, 3, 1, tr("Climb / Throttle"));
     m_battery = addValue(grid, 3, 2, tr("Battery"));
 
-    auto *messagesBox = new QGroupBox(tr("Autopilot messages"), this);
-    m_messages = new QListWidget(messagesBox);
-    auto *messagesLayout = new QVBoxLayout(messagesBox);
-    messagesLayout->addWidget(m_messages);
-
     auto *layout = new QVBoxLayout(this);
     layout->addLayout(grid);
-    layout->addWidget(messagesBox, 1);
+    layout->addStretch(1);
 
     connect(vehicle, &Vehicle::modeChanged, this, [this](const QString &mode, bool armed) {
         m_mode->setText(mode);
         m_armed->setText(armed ? tr("ARMED") : tr("Disarmed"));
-        m_armed->setStyleSheet(kValueStyle
-                               + (armed ? QStringLiteral("color: #d32f2f; font-weight: bold;")
-                                        : QString()));
     });
     connect(vehicle, &Vehicle::aliveChanged, this, [this](bool alive) {
         m_alive->setText(alive ? tr("LIVE") : tr("LOST"));
-        m_alive->setStyleSheet(kValueStyle
-                               + (alive ? QStringLiteral("color: #2e7d32; font-weight: bold;")
-                                        : QStringLiteral("color: #d32f2f; font-weight: bold;")));
     });
     connect(vehicle, &Vehicle::attitudeChanged, this,
             [this](float roll, float pitch, float yaw) {
@@ -87,20 +73,7 @@ TelemetryPanel::TelemetryPanel(Vehicle *vehicle, QWidget *parent)
                                        .arg(remaining));
             });
     connect(vehicle, &Vehicle::gpsChanged, this, [this](int fixType, int satellites) {
-        static const char *fixNames[] = {"No GPS", "No Fix", "2D", "3D", "DGPS", "RTK Float", "RTK Fixed"};
-        const QString fix = fixType >= 0 && fixType <= 6 ? QString::fromLatin1(fixNames[fixType])
-                                                         : QString::number(fixType);
-        m_gps->setText(QStringLiteral("%1, %2 sats").arg(fix).arg(satellites));
-    });
-    connect(vehicle, &Vehicle::statusTextReceived, this, [this](int severity, const QString &text) {
-        auto *item = new QListWidgetItem(text);
-        if (severity <= 3) // MAV_SEVERITY_ERROR and worse
-            item->setForeground(QBrush(QColor(0xd3, 0x2f, 0x2f)));
-        else if (severity == 4) // WARNING
-            item->setForeground(QBrush(QColor(0xf5, 0x7f, 0x17)));
-        m_messages->insertItem(0, item);
-        while (m_messages->count() > kMaxMessages)
-            delete m_messages->takeItem(m_messages->count() - 1);
+        m_gps->setText(QStringLiteral("fix %1, %2 sats").arg(fixType).arg(satellites));
     });
 }
 
