@@ -15,6 +15,21 @@ add_executable(tst_linkmanager tst_linkmanager.cpp)
 target_link_libraries(tst_linkmanager PRIVATE kerkenez_comm Qt6::Test)
 add_test(NAME linkmanager COMMAND tst_linkmanager)
 
+add_executable(tst_commandcontroller tst_commandcontroller.cpp MavlinkTestUtils.h)
+target_link_libraries(tst_commandcontroller PRIVATE kerkenez_core Qt6::Test)
+target_include_directories(tst_commandcontroller PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+add_test(NAME commandcontroller COMMAND tst_commandcontroller)
+
+add_executable(tst_missioncontroller tst_missioncontroller.cpp MavlinkTestUtils.h)
+target_link_libraries(tst_missioncontroller PRIVATE kerkenez_core Qt6::Test)
+target_include_directories(tst_missioncontroller PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+add_test(NAME missioncontroller COMMAND tst_missioncontroller)
+
+add_executable(tst_paramcontroller tst_paramcontroller.cpp MavlinkTestUtils.h)
+target_link_libraries(tst_paramcontroller PRIVATE kerkenez_core Qt6::Test)
+target_include_directories(tst_paramcontroller PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+add_test(NAME paramcontroller COMMAND tst_paramcontroller)
+
 add_executable(tst_tilemath tst_tilemath.cpp)
 target_link_libraries(tst_tilemath PRIVATE kerkenez_map Qt6::Test)
 add_test(NAME tilemath COMMAND tst_tilemath)

@@ -84,6 +84,21 @@ bool isCopterType(uint8_t mavType)
 
 } // namespace
 
+QList<QPair<QString, uint32_t>> apSelectableModes(uint8_t mavType)
+{
+    QList<uint32_t> modes;
+    if (isCopterType(mavType))
+        modes = {0, 2, 5, 16, 4, 3, 6, 9}; // Stabilize…Land
+    else
+        modes = {0, 5, 6, 7, 12, 15, 10, 11}; // Manual…RTL
+
+    QList<QPair<QString, uint32_t>> result;
+    result.reserve(modes.size());
+    for (const uint32_t mode : modes)
+        result.append({apModeName(mavType, mode), mode});
+    return result;
+}
+
 QString apModeName(uint8_t mavType, uint32_t customMode)
 {
     if (isCopterType(mavType))

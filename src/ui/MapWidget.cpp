@@ -1,5 +1,6 @@
 #include "ui/MapWidget.h"
 
+#include <QMenu>
 #include <QMouseEvent>
 #include <QPainter>
 #include <QPainterPath>
@@ -19,6 +20,8 @@ constexpr int kMaxTrailPoints = 4000;
 constexpr double kTrailMinMeters = 1.5; // thin out samples while hovering
 const QColor kMissingTile(0x2b, 0x2f, 0x33);
 const QColor kTrailColor(0xff, 0xd6, 0x00);
+const QColor kMissionColor(0x21, 0x96, 0xf3);
+constexpr double kWaypointRadius = 11.0;
 
 } // namespace
 
@@ -96,6 +99,12 @@ void MapWidget::setFollowVehicle(bool follow)
     update();
 }
 
+void MapWidget::setMissionPlan(const MissionPlan &plan)
+{
+    m_mission = plan;
+    update();
+}
+
 void MapWidget::clearTrail()
 {
     m_trail.clear();
@@ -138,6 +147,7 @@ void MapWidget::paintEvent(QPaintEvent *)
 
     drawTiles(p);
     drawTrail(p);
+    drawMission(p);
     drawHome(p);
     drawVehicle(p);
     drawScaleBar(p);
@@ -197,6 +207,90 @@ void MapWidget::drawTrail(QPainter &p) const
     p.drawPath(path);
     p.setPen(QPen(kTrailColor, 2.5));
     p.drawPath(path);
+}
+
+void MapWidget::drawMission(QPainter &p) const
+{
+    if (m_mission.isEmpty())
+        return;
+
+    p.save();
+
+    QPainterPath route;
+    bool started = false;
+    for (const MissionItem &item : m_mission) {
+        if (!item.hasLocation() && item.command != MAV_CMD_NAV_TAKEOFF)
+            continue;
+        const QPointF pos = geoToScreen(item.latitude, item.longitude);
+        if (!started) {
+            route.moveTo(pos);
+            started = true;
+        } else {
+            route.lineTo(pos);
+        }
+    }
+    if (started) {
+        p.setBrush(Qt::NoBrush);
+        p.setPen(QPen(QColor(0, 0, 0, 120), 5));
+        p.drawPath(route);
+        p.setPen(QPen(kMissionColor, 2.5, Qt::DashLine));
+        p.drawPath(route);
+    }
+
+    QFont font = p.font();
+    font.setPixelSize(11);
+    font.setBold(true);
+    p.setFont(font);
+    for (int i = 0; i < m_mission.size(); ++i) {
+        const MissionItem &item = m_mission.at(i);
+        if (!item.hasLocation() && item.command != MAV_CMD_NAV_TAKEOFF)
+            continue;
+        const QPointF pos = geoToScreen(item.latitude, item.longitude);
+        p.setPen(QPen(Qt::black, 2));
+        p.setBrush(item.command == MAV_CMD_NAV_TAKEOFF ? QColor(0x8b, 0xc3, 0x4a)
+                                                       : kMissionColor);
+        p.drawEllipse(pos, kWaypointRadius, kWaypointRadius);
+        p.setPen(Qt::white);
+        p.drawText(QRectF(pos.x() - kWaypointRadius, pos.y() - kWaypointRadius,
+                          2 * kWaypointRadius, 2 * kWaypointRadius),
+                   Qt::AlignCenter, QString::number(i + 1));
+    }
+    p.restore();
+}
+
+int MapWidget::waypointAt(const QPointF &point) const
+{
+    for (int i = m_mission.size() - 1; i >= 0; --i) {
+        const MissionItem &item = m_mission.at(i);
+        if (!item.hasLocation() && item.command != MAV_CMD_NAV_TAKEOFF)
+            continue;
+        const QPointF pos = geoToScreen(item.latitude, item.longitude);
+        if (QLineF(pos, point).length() <= kWaypointRadius + 2)
+            return i;
+    }
+    return -1;
+}
+
+void MapWidget::showContextMenu(const QPoint &position)
+{
+    double lat = 0, lon = 0;
+    screenToGeo(position, &lat, &lon);
+    const int hit = waypointAt(position);
+
+    QMenu menu(this);
+    QAction *flyHere = menu.addAction(tr("Fly here (Guided)"));
+    QAction *addWaypoint = menu.addAction(tr("Add waypoint here"));
+    QAction *remove = hit >= 0 ? menu.addAction(tr("Delete waypoint %1").arg(hit + 1)) : nullptr;
+
+    QAction *chosen = menu.exec(mapToGlobal(position));
+    if (!chosen)
+        return;
+    if (chosen == flyHere)
+        emit flyToRequested(lat, lon);
+    else if (chosen == addWaypoint)
+        emit waypointAdded(lat, lon);
+    else if (chosen == remove)
+        emit waypointRemoved(hit);
 }
 
 void MapWidget::drawHome(QPainter &p) const
@@ -302,8 +396,18 @@ void MapWidget::drawAttribution(QPainter &p) const
 
 void MapWidget::mousePressEvent(QMouseEvent *event)
 {
+    if (event->button() == Qt::RightButton) {
+        showContextMenu(event->pos());
+        return;
+    }
     if (event->button() != Qt::LeftButton)
         return;
+
+    m_draggedWaypoint = waypointAt(event->position());
+    if (m_draggedWaypoint >= 0) {
+        setCursor(Qt::SizeAllCursor);
+        return;
+    }
     m_dragging = true;
     m_lastDragPos = event->pos();
     setCursor(Qt::ClosedHandCursor);
@@ -311,6 +415,12 @@ void MapWidget::mousePressEvent(QMouseEvent *event)
 
 void MapWidget::mouseMoveEvent(QMouseEvent *event)
 {
+    if (m_draggedWaypoint >= 0) {
+        double lat = 0, lon = 0;
+        screenToGeo(event->position(), &lat, &lon);
+        emit waypointMoved(m_draggedWaypoint, lat, lon);
+        return;
+    }
     if (!m_dragging)
         return;
 
@@ -334,6 +444,7 @@ void MapWidget::mouseReleaseEvent(QMouseEvent *event)
 {
     Q_UNUSED(event)
     m_dragging = false;
+    m_draggedWaypoint = -1;
     setCursor(Qt::OpenHandCursor);
 }
 

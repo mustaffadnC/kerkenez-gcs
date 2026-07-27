@@ -36,6 +36,12 @@ SITL/vehicle ──TCP/UDP/serial──► ILink ──bytesReceived(QByteArray)
 
 Command flow is the reverse: UI → controller (Command/Mission/Param) → `MavlinkCodec::pack` → `ILink::send`.
 
+Controllers never touch a link themselves — they emit `sendMessage(QByteArray)`
+and consume decoded messages through `handleMessage`. That keeps the protocol
+state machines testable with nothing but synthetic messages, which is how the
+mission upload/download, acknowledgement matching and retry paths are covered
+in CI.
+
 ## Planned class inventory
 
 | Layer | Class | Responsibility |
@@ -45,9 +51,9 @@ Command flow is the reverse: UI → controller (Command/Mission/Param) → `Mavl
 | comm | `LinkManager` | active link, auto-reconnect, statistics |
 | core | `MavlinkCodec` | byte stream ⇆ messages, CRC/seq stats |
 | core | `Vehicle` | central vehicle state, Qt signals per field group |
-| core | `CommandController` | COMMAND_LONG + ACK matching, timeout/retry |
-| core | `MissionController` | mission protocol state machine (upload/download) |
-| core | `ParamController` | parameter list/set with progress |
+| core | `CommandController` | COMMAND_LONG + ACK matching, one command at a time, timeout/retry |
+| core | `MissionController` | mission protocol state machine (upload/download/clear) |
+| core | `ParamController` | parameter list/set, re-requests indices the link dropped |
 | core | `TelemetryRecorder` / `TlogPlayer` | timestamped tlog record + replay |
 | ui | `PfdWidget`, `CompassWidget` | QPainter flight instruments |
 | map | `TileMath` | Web Mercator conversions, ground resolution, distances |

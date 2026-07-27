@@ -1,6 +1,7 @@
 build/
 tools/sitl/
 *.tlog
+*.log
 tile-cache/
 eeprom.bin
 logs/

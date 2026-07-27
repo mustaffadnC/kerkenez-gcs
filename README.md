@@ -4,9 +4,9 @@
 
 A UAV ground control station written in **C++20 / Qt 6**, speaking **MAVLink v2** and tested against **ArduPilot SITL** — no hardware required.
 
-![Kerkenez GCS during a scripted SITL flight](docs/img/flight.gif)
+![Kerkenez GCS flying an uploaded mission in SITL](docs/img/mission.gif)
 
-*Live capture: scripted guided flight in ArduPilot SITL — flight instruments on the left, live tracking on the map to the right.*
+*Live capture: the ground station uploads a mission it built, arms the vehicle, takes off and switches to AUTO — instruments on the left, the mission and the vehicle's track on the map.*
 
 > 🇹🇷 *Türkçe özet aşağıda.*
 
@@ -19,7 +19,7 @@ Most hobby GCS projects wrap a web view around someone else's stack. Kerkenez is
 - **Offline-capable slippy map** — own tile engine with disk cache, built for environments where you cannot assume connectivity
 - **Simulation-first workflow** — every feature is validated against ArduPilot SITL (Copter + Plane)
 
-## Status — Phase 3 (map) ✅
+## Status — Phase 4 (commands and missions) ✅
 
 | Phase | Scope | Status |
 |---|---|---|
@@ -27,18 +27,36 @@ Most hobby GCS projects wrap a web view around someone else's stack. Kerkenez is
 | 1 | Link layer (TCP/UDP/serial), vehicle model, reconnect | ✅ done |
 | 2 | Telemetry panel / PFD (artificial horizon, tapes, alerts) | ✅ done |
 | 3 | Map with offline tile cache, live tracking | ✅ done |
-| 4 | Commands (ARM/Takeoff/RTL), waypoint mission editor, params | ⬜ |
+| 4 | Commands (ARM/Takeoff/RTL), waypoint mission editor, params | ✅ done |
 | 5 | tlog recording + replay, flight summary | ⬜ |
 | 6 | Release packaging, demo video | ⬜ |
 
 Working today:
+- **Mission planning**: right-click the map to add waypoints, drag them to move, edit altitudes in the table, then upload to the vehicle — or download what the vehicle already has. Full MAVLink mission protocol with retries, `*_INT` messages only
+- **Commands**: ARM/DISARM (with confirmation), takeoff, RTL, land and a flight-mode selector that follows the vehicle type; every command is acknowledgement-matched and retried before it is reported as failed
+- **Guided control**: right-click anywhere on the map to send the vehicle there
+- **Parameters**: full download with per-index recovery for the messages the link drops, filterable table, editable values
 - **Moving map**: own slippy-map engine — OSM tiles, drag to pan, wheel to zoom around the cursor, vehicle icon rotated to heading, flight trail, home marker and a scale bar. Follow mode keeps the vehicle centred and releases as soon as you pan
 - **Primary flight display**: artificial horizon with pitch ladder and roll scale, speed/altitude tapes and climb readout — all drawn with QPainter, no assets, no web view
 - **Compass** with rotating rose and digital heading, **status panel** (mode, ARMED, battery, GPS) and an **alert panel** (TELEMETRY LOST / BATTERY LOW / NO GPS FIX banners + severity-colored autopilot log)
 - **Auto-reconnect**: kill the link (or the vehicle) and the ground station reconnects on its own and re-requests telemetry streams — verified by restarting SITL mid-flight
 - **Vehicle model**: locks onto the first autopilot heartbeat, maps ArduPilot Copter/Plane flight modes, watchdogs the heartbeat (3 s → LOST)
 - Parser validated against a **recorded real SITL byte stream** checked into `tests/data/` (zero CRC errors, chunked feed equals whole feed); instruments have headless render tests
-- **Scripted demo flight**: `tools\run_demo.ps1` boots SITL, flies a guided mission via pymavlink and watches it from the GCS (the GIF above is its `-GrabDir` output)
+- **Scripted demo flight**: `tools\run_demo.ps1 -Mission` boots SITL and lets the ground station do everything itself — build a plan, upload it, go GUIDED, arm, take off, switch to AUTO (the GIF above is its `-GrabDir` output)
+
+### Mission planning
+
+Waypoints are added by right-clicking the map and dragged to reposition; the
+table edits the same plan, so both views always agree. Upload sends the plan
+with the MAVLink mission protocol — `MISSION_COUNT`, one `MISSION_ITEM_INT` per
+request from the vehicle, then the vehicle's `MISSION_ACK`. Item 0 is the home
+position that ArduPilot expects, inserted automatically and stripped again on
+download.
+
+```powershell
+# the ground station plans, uploads and flies it, end to end
+powershell -ExecutionPolicy Bypass -File tools\run_demo.ps1 -Mission
+```
 
 ### Offline map
 
@@ -90,7 +108,7 @@ Details in [docs/architecture.md](docs/architecture.md), MAVLink usage notes in 
 
 ## 🇹🇷 Türkçe Özet
 
-Kerkenez, **C++20 / Qt 6** ile yazılmış, **MAVLink v2** konuşan ve **ArduPilot SITL** ile donanımsız test edilen bir İHA yer kontrol istasyonudur. Hazır web bileşeni gömmek yerine ulaşım katmanından itibaren kendi yazılmıştır: özel MAVLink codec'i (CRC + paket kaybı takibi), QPainter ile çizilen uçuş göstergeleri ve **internet olmadan da çalışan**, disk cache'li kendi harita motoru. Faz 0–3 tamamlandı (iskelet, bağlantı katmanı, uçuş göstergeleri, harita); yol haritası yukarıdaki tabloda.
+Kerkenez, **C++20 / Qt 6** ile yazılmış, **MAVLink v2** konuşan ve **ArduPilot SITL** ile donanımsız test edilen bir İHA yer kontrol istasyonudur. Hazır web bileşeni gömmek yerine ulaşım katmanından itibaren kendi yazılmıştır: özel MAVLink codec'i (CRC + paket kaybı takibi), QPainter ile çizilen uçuş göstergeleri, **internet olmadan da çalışan** disk cache'li kendi harita motoru ve haritadan çizilen görevleri araca yükleyip uçuran görev/komut altyapısı. Faz 0–4 tamamlandı; yol haritası yukarıdaki tabloda.
 
 ## License
 

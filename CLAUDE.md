@@ -29,6 +29,11 @@ cmake --preset mingw-debug && cmake --build --preset mingw-debug && ctest --pres
 - **QPainter kuralı:** fırça/kalem değiştiren her çizim yardımcısı `p.save()/p.restore()` ile sarmalanır. Faz 3'te `drawAttribution` fırçayı yarı saydam beyaz bırakmış, sondaki çerçeve `drawRect`'i tüm haritayı boyamıştı — widget testleri tam piksel rengi karşılaştırdığı için yakalandı. Yeni widget testleri de `!isNull()` değil, gerçek renk assert etsin.
 - **QSplitter:** `setStretchFactor` yalnız sonraki yeniden boyutlamaları etkiler; ilk bölünme sizeHint'ten gelir → başlangıç oranı için `setSizes` şart.
 - Tile cache yolu: `%LOCALAPPDATA%\Kerkenez GCS\cache\tiles` (QStandardPaths::CacheLocation).
+- **Kontrolcü deseni:** core kontrolcüleri link'i tanımaz; `sendMessage(QByteArray)` yayar, `handleMessage()` tüketir. Testler sahte mesajlarla protokolü uçtan uca sürer — yeni protokol eklerken bu deseni koru.
+- **Zamanlayıcı testi kuralı:** tekrar eden retry'larda **tam sayı** assert etme (yarışlı). "En az bir kez gönderildi + içeriği doğru" de. ParamController testi bu yüzden flaky çıkmıştı.
+- **Vehicle sırası:** `firstHeartbeat` yayılmadan ÖNCE `m_vehicleType` atanır; dinleyiciler mod listesini tipten kuruyor (Copter/Plane mod numaraları farklı).
+- **Arm reddi normaldir:** EKF oturana dek `PreArm: Need Position Estimate` gelir; demo 1 Hz tick ile ~20 deneme yapıp geçiyor. Retry'ı komut ACK'ine değil tick'e bağla.
+- GUI build (WIN32) konsolsuz → qInfo hiçbir yere gitmez; demo izi `demo-mission.log` dosyasına yazılır.
 
 ## Fazlar
 
@@ -36,7 +41,7 @@ cmake --preset mingw-debug && cmake --build --preset mingw-debug && ctest --pres
 - **Faz 1 ✅** — UdpLink/SerialLink + LinkManager (3 sn auto-reconnect, SITL restart ile doğrulandı), Vehicle modeli (sysid kilidi, mod adları, heartbeat watchdog), ConnectDialog + TelemetryPanel + status bar istatistikleri, gerçek SITL kaydı fixture (`tests/data/sitl_stream.bin`, `tools/record_stream.py`), 4 test hedefi
 - **Faz 2 ✅** — PfdWidget (yapay ufuk, pitch merdiveni, roll yayı, hız/irtifa şeritleri; görünür pitch ±35°), CompassWidget, StatusPanel, AlertPanel (banner + severity log), Raw telemetry dock, `--connect`/`--grab` CLI, `tools/demo_flight.py` + `tools/run_demo.ps1`, README'de canlı uçuş GIF'i (docs/img/)
 - **Faz 3 ✅** — `src/map` (TileMath, TileCache RAM+disk, TileFetcher: OSM UA + ≤2 paralel + offline anahtarı), MapWidget (pan/zoom, heading'e dönen araç, iz, home, ölçek çubuğu, attribution, takip modu), Vehicle'a HOME_POSITION, `--map-offline` CLI; kabul kanıtlandı: cache dolduktan sonra offline modda tile sayısı 19→19 sabit, harita çizilmeye devam etti (docs/img/map-offline.png)
-- **Faz 4** — CommandController (ACK/timeout/retry), guided "buraya git", MissionEditor + MissionController, ParamTable; kabul: haritada çizilen 6+ WP görevi Copter+Plane SITL'de uçar, video
+- **Faz 4 ✅** — CommandController (ACK eşleme, tek seferde tek komut, retry), MissionController (upload/download/clear, seq0=home), ParamController (eksik index kurtarma), harita üzerinde görev düzenleme (sağ tık ekle/sil, sürükle), MissionPanel, ParamDialog, komut çubuğu + mod seçici, `--demo-mission`; kabul kanıtlandı: GCS kendi kurduğu 6 öğelik görevi yükledi → GUIDED → 21 arm denemesi (EKF hazır olana dek) → kalkış → AUTO → waypoint'ler uçuldu (docs/img/mission.gif)
 - **Faz 5** — TelemetryRecorder/TlogPlayer, uçuş özeti + CSV; kabul: kayıt kapat-aç replay birebir
 - **Faz 6** — EN README cilası, windeployqt release zip, demo video, CV entegrasyonu
 - **Stretch** — çoklu araç (-I1 → 5770), SDL2 joystick, geofence

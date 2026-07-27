@@ -61,10 +61,16 @@ int main(int argc, char *argv[])
         QStringLiteral("map-offline"),
         QStringLiteral("Draw the map from the tile cache only, never the network."));
     parser.addOption(offlineMapOption);
+    const QCommandLineOption demoMissionOption(
+        QStringLiteral("demo-mission"),
+        QStringLiteral("Build, upload and fly a demo mission once the vehicle is ready."));
+    parser.addOption(demoMissionOption);
     parser.process(app);
 
     if (parser.isSet(offlineMapOption))
         window.setMapOffline(true);
+    if (parser.isSet(demoMissionOption))
+        window.startDemoMission();
 
     QTimer grabTimer;
     int grabIndex = 0;

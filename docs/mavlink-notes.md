@@ -42,6 +42,18 @@ expects from a ground station).
 - **Mission protocol** is a strict request/response ladder; the state machine in
   `MissionController` must tolerate retransmits and out-of-order requests.
   Reference: https://mavlink.io/en/services/mission.html
+  - Item 0 is the home position for ArduPilot, so a plan of N waypoints is
+    uploaded as N+1 items and download drops the first one again.
+  - The vehicle may ask with either `MISSION_REQUEST_INT` or the legacy
+    `MISSION_REQUEST`; both are answered with `MISSION_ITEM_INT`.
+- **Command acknowledgements**: `MAV_RESULT_IN_PROGRESS` means keep waiting, not
+  resend — retransmitting would restart the operation. Only silence justifies a
+  retry.
+- **Parameter download** is a best-effort burst: gaps in `param_index` are
+  normal on a radio link, so missing indices are re-requested individually with
+  `PARAM_REQUEST_READ` once the burst goes quiet.
+- **`param_id` is not a string**: it is 16 bytes, null-terminated only when
+  shorter, so a 16-character name has no terminator at all.
 - **ArduPilot flight modes** live in `custom_mode` (e.g. Copter: 0=Stabilize,
   3=Auto, 4=Guided, 5=Loiter, 6=RTL, 9=Land). Mode names differ per vehicle type —
   map them from HEARTBEAT `type`.

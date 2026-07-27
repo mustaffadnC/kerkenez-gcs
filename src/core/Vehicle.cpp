@@ -116,6 +116,9 @@ void Vehicle::handleHeartbeat(const mavlink_message_t &msg)
     if (hb.type == MAV_TYPE_GCS || hb.autopilot == MAV_AUTOPILOT_INVALID)
         return;
     if (m_systemId == 0) {
+        // Set the type first: listeners of firstHeartbeat build mode lists from
+        // it, and Copter and Plane number their modes differently.
+        m_vehicleType = hb.type;
         m_systemId = msg.sysid;
         emit firstHeartbeat(m_systemId);
     }

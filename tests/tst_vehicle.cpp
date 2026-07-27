@@ -31,9 +31,17 @@ private slots:
         QSignalSpy firstHb(&vehicle, &Vehicle::firstHeartbeat);
         QSignalSpy mode(&vehicle, &Vehicle::modeChanged);
 
+        // The vehicle type must already be readable when firstHeartbeat fires:
+        // mode lists are built from it and differ between Copter and Plane.
+        uint8_t typeAtFirstHeartbeat = MAV_TYPE_GENERIC;
+        connect(&vehicle, &Vehicle::firstHeartbeat, &vehicle, [&] {
+            typeAtFirstHeartbeat = vehicle.vehicleType();
+        });
+
         vehicle.handleMessage(makeHeartbeat(1, MAV_TYPE_QUADROTOR, 4, true)); // Copter Guided
 
         QCOMPARE(firstHb.count(), 1);
+        QCOMPARE(int(typeAtFirstHeartbeat), int(MAV_TYPE_QUADROTOR));
         QCOMPARE(vehicle.systemId(), 1);
         QCOMPARE(mode.count(), 1);
         QCOMPARE(vehicle.modeName(), QStringLiteral("Guided"));

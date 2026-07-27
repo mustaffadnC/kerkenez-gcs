@@ -4,6 +4,7 @@
 #include <QVector>
 #include <QWidget>
 
+#include "core/MissionItem.h"
 #include "map/TileId.h"
 
 namespace kerkenez {
@@ -35,11 +36,16 @@ public slots:
     void setVehiclePosition(double lat, double lon, float altMsl, float altRel, float headingDeg);
     void setHomePosition(double lat, double lon);
     void setFollowVehicle(bool follow);
+    void setMissionPlan(const kerkenez::MissionPlan &plan);
     void clearTrail();
     void centerOnVehicle();
 
 signals:
     void followVehicleChanged(bool follow);
+    void flyToRequested(double lat, double lon);
+    void waypointAdded(double lat, double lon);
+    void waypointMoved(int index, double lat, double lon);
+    void waypointRemoved(int index);
 
 protected:
     void paintEvent(QPaintEvent *event) override;
@@ -54,7 +60,10 @@ private:
     void screenToGeo(const QPointF &point, double *lat, double *lon) const;
     void drawTiles(QPainter &p);
     void drawTrail(QPainter &p) const;
+    void drawMission(QPainter &p) const;
     void drawHome(QPainter &p) const;
+    int waypointAt(const QPointF &point) const;
+    void showContextMenu(const QPoint &position);
     void drawVehicle(QPainter &p) const;
     void drawScaleBar(QPainter &p) const;
     void drawAttribution(QPainter &p) const;
@@ -77,8 +86,10 @@ private:
     double m_homeLon = 0;
 
     QVector<QPointF> m_trail; // x = longitude, y = latitude
+    MissionPlan m_mission;
     bool m_followVehicle = true;
     bool m_dragging = false;
+    int m_draggedWaypoint = -1;
     QPoint m_lastDragPos;
 };
 

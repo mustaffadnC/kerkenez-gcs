@@ -5,10 +5,16 @@ add_library(kerkenez_ui STATIC
     CompassWidget.cpp
     ConnectDialog.h
     ConnectDialog.cpp
+    DemoMissionRunner.h
+    DemoMissionRunner.cpp
     MainWindow.h
     MainWindow.cpp
     MapWidget.h
     MapWidget.cpp
+    MissionPanel.h
+    MissionPanel.cpp
+    ParamDialog.h
+    ParamDialog.cpp
     PfdWidget.h
     PfdWidget.cpp
     StatusPanel.h
