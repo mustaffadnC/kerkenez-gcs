@@ -57,7 +57,14 @@ int main(int argc, char *argv[])
         QStringLiteral("Record window frames: <dir>[,count[,intervalMs]]"),
         QStringLiteral("spec"));
     parser.addOption(grabOption);
+    const QCommandLineOption offlineMapOption(
+        QStringLiteral("map-offline"),
+        QStringLiteral("Draw the map from the tile cache only, never the network."));
+    parser.addOption(offlineMapOption);
     parser.process(app);
+
+    if (parser.isSet(offlineMapOption))
+        window.setMapOffline(true);
 
     QTimer grabTimer;
     int grabIndex = 0;

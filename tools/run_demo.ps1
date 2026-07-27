@@ -10,7 +10,8 @@ param(
     [string]$GrabDir = '',
     [int]$GrabFrames = 40,
     [int]$GrabIntervalMs = 600,
-    [int]$WatchSeconds = 30
+    [int]$WatchSeconds = 30,
+    [switch]$MapOffline
 )
 
 $ErrorActionPreference = 'Stop'
@@ -50,6 +51,7 @@ if (-not $airborne) {
 
 $gcsArgs = @('--connect', 'tcp:127.0.0.1:5762')
 if ($GrabDir) { $gcsArgs += @('--grab', "$GrabDir,$GrabFrames,$GrabIntervalMs") }
+if ($MapOffline) { $gcsArgs += '--map-offline' }
 $gcs = Start-Process -FilePath $gcsExe -ArgumentList $gcsArgs -PassThru
 
 Write-Host "watching the flight for $WatchSeconds s..."

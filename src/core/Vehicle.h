@@ -47,6 +47,10 @@ public:
     int gpsFixType() const { return m_gpsFixType; }
     int gpsSatellites() const { return m_gpsSatellites; }
 
+    bool hasHome() const { return m_hasHome; }
+    double homeLatitude() const { return m_homeLatitude; }
+    double homeLongitude() const { return m_homeLongitude; }
+
     // Heartbeat watchdog period (exposed for tests).
     void setHeartbeatTimeoutMs(int ms);
 
@@ -62,6 +66,7 @@ signals:
     void vfrChanged(float airspeed, float groundspeed, float climbRate, int throttlePct);
     void batteryChanged(float voltage, float current, int remainingPct);
     void gpsChanged(int fixType, int satellites);
+    void homeChanged(double lat, double lon);
     void statusTextReceived(int severity, const QString &text);
 
 private:
@@ -83,6 +88,8 @@ private:
     float m_batteryVoltage = 0, m_batteryCurrent = 0;
     int m_batteryRemainingPct = -1;
     int m_gpsFixType = 0, m_gpsSatellites = 0;
+    bool m_hasHome = false;
+    double m_homeLatitude = 0, m_homeLongitude = 0;
 };
 
 } // namespace kerkenez

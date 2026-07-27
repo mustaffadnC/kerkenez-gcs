@@ -2,11 +2,16 @@
 // normal and extreme values. Catches painter math crashes without a display.
 
 #include <QImage>
+#include <QTemporaryDir>
 #include <QTest>
 
 #include "core/Vehicle.h"
+#include "map/TileCache.h"
+#include "map/TileFetcher.h"
+#include "map/TileMath.h"
 #include "ui/AlertPanel.h"
 #include "ui/CompassWidget.h"
+#include "ui/MapWidget.h"
 #include "ui/PfdWidget.h"
 #include "ui/StatusPanel.h"
 
@@ -17,8 +22,10 @@ namespace {
 QImage renderWidget(QWidget &widget, const QSize &size)
 {
     widget.resize(size);
-    QImage image(size, QImage::Format_ARGB32);
-    image.fill(Qt::transparent);
+    // Painting into a non-premultiplied ARGB32 image over a transparent fill
+    // washes out the colors; an opaque RGB32 target keeps them exact.
+    QImage image(size, QImage::Format_RGB32);
+    image.fill(Qt::black);
     widget.render(&image);
     return image;
 }
@@ -78,6 +85,63 @@ private slots:
 
         QVERIFY(!renderWidget(status, {320, 160}).isNull());
         QVERIFY(!renderWidget(alerts, {320, 300}).isNull());
+    }
+
+    void mapDrawsCachedTilesWithoutNetwork()
+    {
+        QTemporaryDir dir;
+        QVERIFY(dir.isValid());
+        TileCache cache(dir.path());
+        TileFetcher fetcher(&cache);
+        fetcher.setOffline(true); // any network access here would be a bug
+
+        constexpr int zoom = 16;
+        constexpr double lat = 39.925533;
+        constexpr double lon = 32.866287;
+        const int centerX = int(TileMath::lonToTileX(lon, zoom));
+        const int centerY = int(TileMath::latToTileY(lat, zoom));
+        QImage tile(TileMath::kTileSize, TileMath::kTileSize, QImage::Format_ARGB32);
+        tile.fill(Qt::magenta);
+        for (int dx = -2; dx <= 2; ++dx)
+            for (int dy = -2; dy <= 2; ++dy)
+                cache.insert({zoom, centerX + dx, centerY + dy}, tile);
+
+        MapWidget map(&cache, &fetcher);
+        map.setZoom(zoom);
+        map.setCenter(lat, lon);
+
+        // Exact color, not just "renders": an overlay that leaks its brush
+        // would tint the whole map.
+        const QImage rendered = renderWidget(map, {400, 300});
+        QCOMPARE(rendered.pixelColor(200, 150), QColor(Qt::magenta));
+        QCOMPARE(rendered.pixelColor(20, 20), QColor(Qt::magenta));
+    }
+
+    void mapTracksVehicleAndBuildsATrail()
+    {
+        QTemporaryDir dir;
+        TileCache cache(dir.path());
+        TileFetcher fetcher(&cache);
+        fetcher.setOffline(true);
+        MapWidget map(&cache, &fetcher);
+
+        // A pre-EKF (0, 0) fix must not drag the map into the Atlantic.
+        map.setVehiclePosition(0.0, 0.0, 0, 0, 0);
+        QCOMPARE(map.trailSize(), 0);
+
+        map.setVehiclePosition(39.925533, 32.866287, 850, 10, 90);
+        map.setVehiclePosition(39.935533, 32.876287, 850, 20, 180);
+        QCOMPARE(map.trailSize(), 2);
+        QVERIFY(qAbs(map.centerLatitude() - 39.935533) < 1e-9);
+
+        // Panning releases the follow lock, so the map stops chasing.
+        map.setFollowVehicle(false);
+        const double frozen = map.centerLatitude();
+        map.setVehiclePosition(39.945533, 32.886287, 850, 30, 270);
+        QCOMPARE(map.centerLatitude(), frozen);
+        QCOMPARE(map.trailSize(), 3);
+
+        QVERIFY(!renderWidget(map, {400, 300}).isNull());
     }
 };
 

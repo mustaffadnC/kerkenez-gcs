@@ -7,6 +7,8 @@ add_library(kerkenez_ui STATIC
     ConnectDialog.cpp
     MainWindow.h
     MainWindow.cpp
+    MapWidget.h
+    MapWidget.cpp
     PfdWidget.h
     PfdWidget.cpp
     StatusPanel.h
@@ -16,5 +18,5 @@ add_library(kerkenez_ui STATIC
 )
 
 target_link_libraries(kerkenez_ui
-    PUBLIC kerkenez_core kerkenez_comm Qt6::Widgets
+    PUBLIC kerkenez_core kerkenez_comm kerkenez_map Qt6::Widgets
 )

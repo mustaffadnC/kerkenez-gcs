@@ -16,6 +16,7 @@ target_include_directories(mavlink SYSTEM INTERFACE ${CMAKE_SOURCE_DIR}/third_pa
 
 add_subdirectory(src/core)
 add_subdirectory(src/comm)
+add_subdirectory(src/map)
 add_subdirectory(src/ui)
 add_subdirectory(src/app)
 add_subdirectory(tests)

@@ -15,6 +15,14 @@ add_executable(tst_linkmanager tst_linkmanager.cpp)
 target_link_libraries(tst_linkmanager PRIVATE kerkenez_comm Qt6::Test)
 add_test(NAME linkmanager COMMAND tst_linkmanager)
 
+add_executable(tst_tilemath tst_tilemath.cpp)
+target_link_libraries(tst_tilemath PRIVATE kerkenez_map Qt6::Test)
+add_test(NAME tilemath COMMAND tst_tilemath)
+
+add_executable(tst_tilecache tst_tilecache.cpp)
+target_link_libraries(tst_tilecache PRIVATE kerkenez_map Qt6::Test)
+add_test(NAME tilecache COMMAND tst_tilecache)
+
 add_executable(tst_widgets tst_widgets.cpp)
 target_link_libraries(tst_widgets PRIVATE kerkenez_ui Qt6::Test)
 add_test(NAME widgets COMMAND tst_widgets)

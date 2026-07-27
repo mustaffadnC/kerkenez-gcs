@@ -26,13 +26,16 @@ cmake --preset mingw-debug && cmake --build --preset mingw-debug && ctest --pres
 - Mission protokolünde yalnızca *_INT varyantları (float lat/lon hassasiyet kaybettirir).
 - GCS kimliği: sysid 255, compid MAV_COMP_ID_MISSIONPLANNER.
 - Sınıf envanteri ve veri akışı: `docs/architecture.md`. MAVLink mesaj seti: `docs/mavlink-notes.md`.
+- **QPainter kuralı:** fırça/kalem değiştiren her çizim yardımcısı `p.save()/p.restore()` ile sarmalanır. Faz 3'te `drawAttribution` fırçayı yarı saydam beyaz bırakmış, sondaki çerçeve `drawRect`'i tüm haritayı boyamıştı — widget testleri tam piksel rengi karşılaştırdığı için yakalandı. Yeni widget testleri de `!isNull()` değil, gerçek renk assert etsin.
+- **QSplitter:** `setStretchFactor` yalnız sonraki yeniden boyutlamaları etkiler; ilk bölünme sizeHint'ten gelir → başlangıç oranı için `setSizes` şart.
+- Tile cache yolu: `%LOCALAPPDATA%\Kerkenez GCS\cache\tiles` (QStandardPaths::CacheLocation).
 
 ## Fazlar
 
 - **Faz 0 ✅** — toolchain, SITL hattı, MavlinkCodec + 4 test, TcpLink, poc_telemetry, CI, dokümanlar
 - **Faz 1 ✅** — UdpLink/SerialLink + LinkManager (3 sn auto-reconnect, SITL restart ile doğrulandı), Vehicle modeli (sysid kilidi, mod adları, heartbeat watchdog), ConnectDialog + TelemetryPanel + status bar istatistikleri, gerçek SITL kaydı fixture (`tests/data/sitl_stream.bin`, `tools/record_stream.py`), 4 test hedefi
 - **Faz 2 ✅** — PfdWidget (yapay ufuk, pitch merdiveni, roll yayı, hız/irtifa şeritleri; görünür pitch ±35°), CompassWidget, StatusPanel, AlertPanel (banner + severity log), Raw telemetry dock, `--connect`/`--grab` CLI, `tools/demo_flight.py` + `tools/run_demo.ps1`, README'de canlı uçuş GIF'i (docs/img/)
-- **Faz 3** — MapWidget + TileCache/TileFetcher (OSM, UA: `KerkenezGCS/1.0 (github.com/conny0506/kerkenez-gcs)`, ≤2 paralel, disk cache → offline); kabul: internet kesik cache'li bölgede çalışır
+- **Faz 3 ✅** — `src/map` (TileMath, TileCache RAM+disk, TileFetcher: OSM UA + ≤2 paralel + offline anahtarı), MapWidget (pan/zoom, heading'e dönen araç, iz, home, ölçek çubuğu, attribution, takip modu), Vehicle'a HOME_POSITION, `--map-offline` CLI; kabul kanıtlandı: cache dolduktan sonra offline modda tile sayısı 19→19 sabit, harita çizilmeye devam etti (docs/img/map-offline.png)
 - **Faz 4** — CommandController (ACK/timeout/retry), guided "buraya git", MissionEditor + MissionController, ParamTable; kabul: haritada çizilen 6+ WP görevi Copter+Plane SITL'de uçar, video
 - **Faz 5** — TelemetryRecorder/TlogPlayer, uçuş özeti + CSV; kabul: kayıt kapat-aç replay birebir
 - **Faz 6** — EN README cilası, windeployqt release zip, demo video, CV entegrasyonu

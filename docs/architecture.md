@@ -6,19 +6,20 @@
 ┌────────────────────────────────────────────────┐
 │ src/app     kerkenez.exe / poc_telemetry.exe   │  wiring, DI
 ├────────────────────────────────────────────────┤
-│ src/ui      QtWidgets                          │  PFD, map, mission editor
-├────────────────────────────────────────────────┤
-│ src/core    QtCore only (headless-testable)    │  codec, vehicle state, protocols
-├────────────────────────────────────────────────┤
+│ src/ui      QtWidgets                          │  PFD, map widget, panels
+├──────────────────────────┬─────────────────────┤
+│ src/core  QtCore only    │ src/map  no GUI     │  codec, vehicle state │ tiles
+├──────────────────────────┴─────────────────────┤
 │ src/comm    QtNetwork + QtSerialPort           │  TCP / UDP / serial links
 ├────────────────────────────────────────────────┤
-│ third_party/mavlink  (c_library_v2, common)    │  generated MAVLink v2 headers
+│ third_party/mavlink (c_library_v2, ardupilot)  │  generated MAVLink v2 headers
 └────────────────────────────────────────────────┘
 ```
 
-Dependency rule: `comm` depends on `core`; `ui` depends on `core` and on
+Dependency rule: `comm` depends on `core`; `ui` depends on `core`, `map` and on
 `comm`'s link abstractions (`LinkConfig`, `ILink` state, `LinkManager`);
-`core` depends only on QtCore + MAVLink headers. Nothing depends on `app`.
+`core` depends only on QtCore + MAVLink headers and `map` on QtCore/Gui/Network.
+Nothing depends on `app`.
 
 ## Data flow (telemetry, Phase 1 target)
 
@@ -49,7 +50,10 @@ Command flow is the reverse: UI → controller (Command/Mission/Param) → `Mavl
 | core | `ParamController` | parameter list/set with progress |
 | core | `TelemetryRecorder` / `TlogPlayer` | timestamped tlog record + replay |
 | ui | `PfdWidget`, `CompassWidget` | QPainter flight instruments |
-| ui | `MapWidget` + `TileCache` + `TileFetcher` | offline-capable slippy map |
+| map | `TileMath` | Web Mercator conversions, ground resolution, distances |
+| map | `TileCache` | RAM LRU over a `<z>/<x>/<y>.png` disk tree — the offline backing store |
+| map | `TileFetcher` | OSM downloads: identifying User-Agent, 2 concurrent, offline switch |
+| ui | `MapWidget` | slippy map painting, pan/zoom, vehicle icon, trail, home marker |
 | ui | `MissionEditor`, `ParamTable`, `ConnectDialog`, `AlertPanel` | operator UI |
 
 `TlogPlayer` emits the same signals as the live pipeline, so every UI component
@@ -60,5 +64,9 @@ works identically during replay — that is why recording lives in `core`.
 - `core` is GUI-free: unit tests run headless in CI (`QT_QPA_PLATFORM=offscreen`).
 - Codec tests feed hand-packed frames (valid, split, corrupted CRC) — see
   `tests/tst_mavlinkcodec.cpp`.
-- Phase 1 adds recorded SITL byte streams under `tests/data/` as parser fixtures.
+- Recorded SITL byte streams under `tests/data/` serve as parser fixtures.
+- Widget tests render into a `QImage` and assert exact pixel colors, which is
+  how a leaked painter brush tinting the whole map was caught.
+- Map tests never touch the network: the fetcher is switched offline and the
+  cache is pre-seeded, so CI proves the offline path rather than assuming it.
 - Integration testing happens against ArduPilot SITL (see `docs/setup.md`).

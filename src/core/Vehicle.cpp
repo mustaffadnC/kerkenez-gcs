@@ -84,6 +84,15 @@ void Vehicle::handleMessage(const mavlink_message_t &msg)
         emit gpsChanged(m_gpsFixType, m_gpsSatellites);
         break;
     }
+    case MAVLINK_MSG_ID_HOME_POSITION: {
+        mavlink_home_position_t home;
+        mavlink_msg_home_position_decode(&msg, &home);
+        m_hasHome = true;
+        m_homeLatitude = home.latitude / 1e7;
+        m_homeLongitude = home.longitude / 1e7;
+        emit homeChanged(m_homeLatitude, m_homeLongitude);
+        break;
+    }
     case MAVLINK_MSG_ID_STATUSTEXT: {
         mavlink_statustext_t status;
         mavlink_msg_statustext_decode(&msg, &status);
