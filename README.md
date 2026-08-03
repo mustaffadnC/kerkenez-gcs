@@ -1,8 +1,13 @@
 # Kerkenez GCS
 
-[![CI](https://github.com/conny0506/kerkenez-gcs/actions/workflows/ci.yml/badge.svg)](https://github.com/conny0506/kerkenez-gcs/actions/workflows/ci.yml)
+[![CI](https://github.com/mustaffadnC/kerkenez-gcs/actions/workflows/ci.yml/badge.svg)](https://github.com/mustaffadnC/kerkenez-gcs/actions/workflows/ci.yml)
 
 A UAV ground control station written in **C++20 / Qt 6**, speaking **MAVLink v2** and tested against **ArduPilot SITL** — no hardware required.
+
+> **Built with AI coding tools.** Much of the code here was scaffolded and iterated using Claude
+> Code. The protocol work, the decision to write the MAVLink v2 codec rather than link a library,
+> and the SITL validation approach are mine — including the choices this README documents openly,
+> like leaving missing map tiles black instead of faking them.
 
 ![Kerkenez GCS flying an uploaded mission in SITL](docs/img/mission.gif)
 

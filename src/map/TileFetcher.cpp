@@ -10,7 +10,7 @@ namespace kerkenez {
 namespace {
 // OSM requires a real identifying User-Agent; a generic one gets blocked.
 const auto kUserAgent =
-    QByteArrayLiteral("KerkenezGCS/0.3 (+https://github.com/conny0506/kerkenez-gcs)");
+    QByteArrayLiteral("KerkenezGCS/0.3 (+https://github.com/mustaffadnC/kerkenez-gcs)");
 constexpr int kMaxQueued = 96;
 } // namespace
 
